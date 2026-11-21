@@ -24,6 +24,58 @@ else count <= count;                // holds present value
 
 ## Testbench Program
 
+// gedit tb7.v
+ 
+module tb7;
+    reg  clk, rst, en;
+    wire [3:0] count;
+ 
+    // Instantiate the up-counter
+    up_counter uut (
+        .clk(clk),
+        .rst(rst),
+        .en(en),
+        .count(count)
+    );
+ 
+    // ---- Clock generation: 10 time-unit period ----
+    initial clk = 0;
+    always #5 clk = ~clk;
+ 
+    initial begin
+        // ---- VCD dump setup ----
+        $dumpfile("up_counter.vcd");   // name of the VCD file to be generated
+        $dumpvars(0, tb7);               // dump all signals in this testbench hierarchy
+ 
+        $monitor("Time=%0t rst=%b clk=%b en=%b | count=%b (%0d)",
+                  $time, rst, clk, en, count, count);
+ 
+        // ---- Apply asynchronous reset ----
+        rst = 1; en = 0;
+        #7  rst = 0;
+ 
+        // ---- Disable counting: count should hold at 0 ----
+        @(negedge clk);
+        @(negedge clk);
+ 
+        // ---- Enable counting and let it run past overflow ----
+        en = 1;
+        repeat (18) @(negedge clk);   // 18 clocks: 4-bit count wraps around once
+ 
+        // ---- Disable again and confirm the count holds ----
+        en = 0;
+        @(negedge clk);
+        @(negedge clk);
+ 
+        // ---- Apply reset again mid-simulation ----
+        rst = 1;
+        @(negedge clk);
+        rst = 0; en = 1;
+        repeat (3) @(negedge clk);
+ 
+        #20 $finish;
+    end
+endmodule
 
 
 
@@ -89,6 +141,7 @@ The design was compiled and simulated using Synopsys VCS, and the functionality 
 
 ## Output
 
+<img width="1915" height="1026" alt="Screenshot 2026-11-21 090709" src="https://github.com/user-attachments/assets/1db8ff5e-31f0-4e56-878e-c63067fe9084" />
 
 
 ## Viva-Voce Questions
